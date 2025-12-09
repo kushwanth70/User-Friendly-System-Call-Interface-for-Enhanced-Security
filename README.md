@@ -1,4 +1,4 @@
-# OS 2 – Operating System Mini Project
+# User-Friendly-System-Call-Interface-for-Enhanced-security
 
 This project is a mini Operating System simulation built using **Python (Flask)** for the backend and **HTML/CSS/JS** for the frontend.  
 It demonstrates core OS concepts such as:
