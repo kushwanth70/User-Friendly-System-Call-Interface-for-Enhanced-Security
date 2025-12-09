@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard — Secure Syscall UI</title>
+  <link rel="stylesheet" href="static/main.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">🖥️</span> <h2>Simple Syscall UI</h2></div>
+    <div class="right">
+      <button id="logout" class="btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h3 class="card-title">📄 Read File from Sandbox</h3>
+      <input id="path" class="big-input" placeholder="Enter file name (e.g., hello.txt)">
+      <button id="read" class="btn big primary blink">Read File</button>
+      <pre id="out" class="output-box"></pre>
+    </section>
+
+    <section class="card">
+      <h3 class="card-title">📁 Directory / Actions</h3>
+      <div id="actionsArea" class="actions-area">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="card-title">📊 Audit Logs (Admin / Auditor)</h3>
+      <button id="logsbtn" class="btn info">Get Logs</button>
+      <pre id="logs" class="output-box"></pre>
+    </section>
+  </main>
+
+<script>
+async function fetchActions() {
+  const res = await fetch('/api/actions');
+  const j = await res.json();
+  if (!j.ok) { document.getElementById('out').innerText = JSON.stringify(j); return; }
+  const actions = j.actions;
+  const area = document.getElementById('actionsArea');
+  area.innerHTML = '';
+  for (const [key, meta] of Object.entries(actions)) {
+    const row = document.createElement('div');
+    row.className = 'action-row';
+    const label = document.createElement('div');
+    label.innerText = meta.label;
+    const btn = document.createElement('button');
+    btn.innerText = meta.allowed ? (meta.label.includes('Delete') ? 'Run (admin)' : 'Run') : 'Not allowed';
+    btn.className = 'btn small ' + (meta.allowed ? 'primary' : 'disabled');
+    btn.disabled = !meta.allowed;
+    btn.onclick = async () => {
+      // prepare params for some actions
+      let params = {};
+      if (key === 'read_file') params.path = document.getElementById('path').value || '';
+      if (key === 'list_dir') params.path = document.getElementById('path').value || '.';
+      if (key === 'delete_file') {
+        if (!confirm('Delete file from sandbox?')) return;
+        params.path = document.getElementById('path').value || '';
+      }
+      // call dispatch
+      const r = await fetch('/api/dispatch', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:key, params})});
+      const j = await r.json();
+      document.getElementById('out').innerText = JSON.stringify(j, null, 2);
+    };
+    row.appendChild(label);
+    row.appendChild(btn);
+    area.appendChild(row);
+  }
+}
+
+document.getElementById('read').onclick = async () => {
+  const path = document.getElementById('path').value;
+  const r = await fetch('/api/dispatch', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'read_file', params:{path}})});
+  document.getElementById('out').innerText = JSON.stringify(await r.json(), null, 2);
+};
+
+document.getElementById('logsbtn').onclick = async () => {
+  const r = await fetch('/api/logs');
+  document.getElementById('logs').innerText = JSON.stringify(await r.json(), null, 2);
+};
+
+document.getElementById('logout').onclick = async () => {
+  await fetch('/api/logout', {method:'POST'});
+  window.location = '/';
+};
+
+window.addEventListener('load', fetchActions);
+</script>
+</body>
+</html>

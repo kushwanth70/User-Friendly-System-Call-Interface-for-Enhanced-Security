@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Login — Secure Syscall UI</title>
+  <link rel="stylesheet" href="static/main.css">
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">🔐</div>
+      <h1>Secure Syscall UI</h1>
+      <p class="subtitle">Safe system-call proxy — demo</p>
+    </div>
+
+    <div class="form">
+      <input id="username" placeholder="username (alice / bob / aud)" class="input" />
+      <input id="password" placeholder="password" type="password" class="input" />
+      <button id="go" class="btn primary blink">Login</button>
+      <div id="msg" class="msg"></div>
+    </div>
+
+    <div class="hint">
+      <small>Demo accounts: <b>alice/alicepass</b> (admin), <b>bob/bobpass</b> (user), <b>aud/audpass</b> (auditor)</small>
+    </div>
+  </div>
+
+<script>
+document.getElementById('go').onclick = async () => {
+  document.getElementById('msg').innerText = '';
+  const res = await fetch('/api/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username: document.getElementById('username').value, password: document.getElementById('password').value})
+  });
+  const j = await res.json();
+  if (j.ok) {
+    window.location = '/dashboard.html';
+  } else {
+    document.getElementById('msg').innerText = j.error || 'login failed';
+  }
+};
+</script>
+</body>
+</html>
